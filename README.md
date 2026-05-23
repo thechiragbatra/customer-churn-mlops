@@ -2,6 +2,7 @@
 
 > Predicts not just **who** will churn — but **who will actually respond** to a retention offer.  
 > Built with causal inference, SHAP explainability, and a production FastAPI backend.
+> ![Dashboard Demo](customer_churn.gif)
 
 ---
 
