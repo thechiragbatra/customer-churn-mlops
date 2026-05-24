@@ -206,7 +206,7 @@ curl -X POST http://localhost:8000/predict \
 ## 👤 Author
 
 **Chirag Batra**  
-B.Tech Computer Science (Data Science) — 3rd Year  
+B.Tech Computer Science (Data Science) 
 [GitHub](https://github.com/YOUR_USERNAME) · [LinkedIn](https://linkedin.com/in/YOUR_PROFILE)
 
 ---
