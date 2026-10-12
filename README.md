@@ -90,38 +90,35 @@ Example outcomes reported in the project workflow:
 - FastAPI
 - Streamlit
 
-## Setup
+## Run locally
 
-This repository is notebook-first. It is designed to run in Jupyter or Google Colab.
-
-### Install dependencies
-
-```bash
-pip install pandas numpy matplotlib seaborn scikit-learn imbalanced-learn xgboost shap causalml mlflow fastapi uvicorn streamlit
-```
-
-### Run the notebooks
-
-Open the notebooks in Jupyter or Colab in order:
+The local Streamlit app reads the included CSV, trains the XGBoost churn model
+on first launch, and caches it while the app is running. No pre-trained model
+files or Colab upload steps are required.
 
 ```bash
-1.eda.ipynb
-2_uplift.ipynb
-3_API.ipynb
-4_streamlit.ipynb
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+streamlit run app.py
 ```
 
-## Example workflow
+Open [http://localhost:8501](http://localhost:8501) in your browser. The app
+shows holdout ROC-AUC, lets you enter customer details, and returns a churn
+probability with a ranked feature-importance view.
 
-```python
-# Example idea: train churn model, compute SHAP values, and score a customer
-# Workflow is implemented in the notebooks rather than a standalone package.
-```
+The notebooks remain available for the full exploratory, API, and dashboard
+experiments. The local app does not present uplift estimates as actionable:
+the uplift notebook generates treatment assignment synthetically, so those
+estimates are not validated by real retention-offer outcomes.
 
 ## Repository structure
 
 ```text
 customer-churn-mlops/
+├── app.py
+├── .gitignore
+├── requirements.txt
 ├── 1.eda.ipynb
 ├── 2_uplift.ipynb
 ├── 3_API.ipynb
