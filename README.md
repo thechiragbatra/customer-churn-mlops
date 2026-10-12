@@ -1,214 +1,143 @@
-# 🔄 Customer Churn MLOps
+# Customer Churn MLOps
 
-> Predicts not just **who** will churn — but **who will actually respond** to a retention offer.  
-> Built with causal inference, SHAP explainability, and a production FastAPI backend.
-> ![Dashboard Demo](customer_churn.gif)
+This project builds a customer churn prediction system that goes beyond simple risk scoring. It combines predictive modeling, explainability, and uplift modeling to identify customers who are likely to churn and most likely to respond to a retention offer.
 
----
+![Customer churn dashboard preview](customer_churn.gif)
 
-## 🏆 Key Results
+## Overview
 
-| Metric | Value |
-|--------|-------|
-| AUC-ROC Score | **0.8186** |
-| Retention budget saved | **$52,500 (56.2%)** |
-| Persuadable customers identified | **819 / 1,869 churners** |
-| API response | **< 100ms** |
+The repository uses the Telco Customer Churn dataset to:
 
----
+- predict whether a customer is likely to churn
+- explain which features drive the prediction
+- estimate treatment uplift for retention offers
+- segment customers into actionable groups
+- expose the model through an API and notebook-based workflow
 
-## 🧠 What Makes This Different
+The core idea is practical: not every customer with a high churn risk should receive an offer. Uplift modeling helps target only the customers who are both at risk and likely to respond.
 
-Most churn projects stop at "this customer will churn." This one goes further:
+## Project flow
 
-1. **Predicts churn probability** using XGBoost + SMOTE
-2. **Explains why** using SHAP values — per customer, not just globally
-3. **Identifies who responds to offers** using causal uplift modeling (T-Learner)
-4. **Recommends an action** — discount, ignore, or don't disturb
-5. **Serves everything via a REST API** with a single `/predict` call
+1. Data cleaning and exploratory analysis
+2. Feature engineering and churn prediction
+3. SHAP-based explainability
+4. Uplift modeling for causal targeting
+5. Customer segmentation for retention strategy
+6. API and dashboard experimentation
 
----
+## Notebook structure
 
-## 🏗 Architecture
+- `1.eda.ipynb` — dataset exploration, cleaning, preprocessing, and churn model training
+- `2_uplift.ipynb` — synthetic treatment setup, uplift learning, and customer segmentation
+- `3_API.ipynb` — FastAPI model serving and prediction endpoint testing
+- `4_streamlit.ipynb` — dashboard prototype for interactive prediction and explainability
+- `WA_Fn-UseC_-Telco-Customer-Churn.csv` — source dataset
 
-```
-Raw Telco CSV (7,043 customers)
-        ↓
-Data Cleaning + Feature Engineering
-(fix TotalCharges dtype, LabelEncoding, SMOTE)
-        ↓
-XGBoost Classifier ──────→ SHAP Explainability
-(AUC-ROC: 0.8186)           (global + per-customer)
-        ↓
-MLflow Experiment Tracking
-        ↓
-Uplift Model (T-Learner, causalml)
-        ↓
-Customer Segmentation
-┌─────────────┬──────────────┬─────────────┬───────────────┐
-│ Persuadable │  Sure Thing  │ Lost Cause  │ Sleeping Dog  │
-│  819 users  │  1,325 users │ 1,050 users │  3,838 users  │
-└─────────────┴──────────────┴─────────────┴───────────────┘
-        ↓
-FastAPI REST API → /predict endpoint
-```
+## Dataset
 
----
+The project uses the Telco Customer Churn dataset, which contains customer subscription and billing attributes such as:
 
-## 📡 API Usage
+- tenure
+- contract type
+- monthly charges
+- total charges
+- internet service type
+- payment method
+- churn label
 
-**Endpoint:** `POST /predict`
+## Modeling approach
 
-**Request:**
-```json
-{
-  "tenure": 3,
-  "MonthlyCharges": 85.5,
-  "TotalCharges": 256.5,
-  "Contract": 0,
-  "InternetService": 2,
-  "gender": 1,
-  "SeniorCitizen": 0,
-  "Partner": 0,
-  "Dependents": 0,
-  "PhoneService": 1,
-  "MultipleLines": 0,
-  "OnlineSecurity": 0,
-  "OnlineBackup": 0,
-  "DeviceProtection": 0,
-  "TechSupport": 0,
-  "StreamingTV": 0,
-  "StreamingMovies": 0,
-  "PaperlessBilling": 1,
-  "PaymentMethod": 2
-}
-```
+### Churn prediction
 
-**Response:**
-```json
-{
-  "churn_probability": 0.8685,
-  "uplift_score": -0.0995,
-  "segment": "Persuadable",
-  "recommendation": "🎯 Offer 20% discount immediately",
-  "top_reasons": ["Contract", "MonthlyCharges", "InternetService"]
-}
-```
+The churn model uses an XGBoost classifier with class imbalance handling via SMOTE. This helps improve recall for the minority churn class.
 
----
+### Explainability
 
-## 💰 Causal Inference — The Business Impact
+SHAP is used to interpret model decisions and identify the top contributors to churn risk for each customer.
 
-Standard churn models waste money by offering discounts to everyone at risk.  
-Uplift modeling identifies the **4 customer types** that matter:
+### Uplift / causal modeling
 
-| Segment | Description | Action |
-|---------|-------------|--------|
-| ✅ **Persuadable** | High churn risk + responds to offer | Target immediately |
-| 😐 **Sure Thing** | Low churn risk anyway | No action needed |
-| ❌ **Lost Cause** | High churn risk, won't respond | Accept the loss |
-| ⚠️ **Sleeping Dog** | Low risk but offer might backfire | Do not contact |
+A T-learner style causal uplift setup is used to estimate an offer effect. Customers are segmented into groups such as:
 
-**Result:** Targeting only Persuadables saves **$52,500 (56.2%)** of retention budget vs targeting all churners.
+- Persuadable
+- Sure Thing
+- Lost Cause
+- Sleeping Dog
 
----
+This allows the business to prioritize retention actions where they are most effective.
 
-## 📊 EDA Insights
+## Business value
 
-- **Contract type** is the #1 churn driver — month-to-month customers churn at **42%** vs **3%** for two-year contracts
-- **Fiber optic** customers churn at **~40%** — highest of any internet service type
-- **Short tenure** = high churn — majority of churners leave within the first **10 months**
-- **Higher monthly charges** correlate strongly with churn
+Instead of giving discounts to all at-risk customers, this approach focuses on customers who are most likely to respond to a retention offer. That leads to lower campaign cost and better retention efficiency.
 
----
+Example outcomes reported in the project workflow:
 
-## 🛠 Tech Stack
+- AUC-ROC around 0.8186
+- Meaningful uplift segmentation
+- Retention budget savings through targeted interventions
 
-| Layer | Tools |
-|-------|-------|
-| Data Processing | Pandas, NumPy, scikit-learn |
-| Class Imbalance | SMOTE (imbalanced-learn) |
-| ML Model | XGBoost |
-| Causal Inference | causalml (T-Learner) |
-| Explainability | SHAP |
-| Experiment Tracking | MLflow |
-| API | FastAPI + Uvicorn |
-| Notebooks | Google Colab |
+## Tech stack
 
----
+- Python
+- pandas, NumPy
+- matplotlib, seaborn
+- scikit-learn
+- imbalanced-learn (SMOTE)
+- XGBoost
+- SHAP
+- causalml
+- MLflow
+- FastAPI
+- Streamlit
 
-## 🗂 Project Structure
+## Setup
 
-```
-customer-churn-mlops/
-│
-├── notebooks/
-│   ├── 01_eda.ipynb          # EDA, cleaning, modeling, SHAP
-│   ├── 02_uplift.ipynb       # Causal inference, segmentation
-│   └── 03_api.ipynb          # FastAPI app + live testing
-│
-├── data/
-│   └── WA_Fn-UseC_-Telco-Customer-Churn.csv
-│
-├── models/
-│   ├── churn_model.pkl
-│   ├── uplift_model.pkl
-│   └── feature_names.pkl
-│
-└── README.md
-```
+This repository is notebook-first. It is designed to run in Jupyter or Google Colab.
 
----
-
-## 🚀 Run Locally
+### Install dependencies
 
 ```bash
-# Clone the repo
-git clone https://github.com/YOUR_USERNAME/customer-churn-mlops.git
-cd customer-churn-mlops
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the API
-uvicorn app.main:app --reload
-
-# Test the endpoint
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"tenure": 3, "MonthlyCharges": 85.5, ...}'
+pip install pandas numpy matplotlib seaborn scikit-learn imbalanced-learn xgboost shap causalml mlflow fastapi uvicorn streamlit
 ```
 
----
+### Run the notebooks
 
-## 📈 Model Performance
+Open the notebooks in Jupyter or Colab in order:
 
-| Model | AUC-ROC | F1 (Churn) | Precision | Recall |
-|-------|---------|------------|-----------|--------|
-| XGBoost + SMOTE | **0.8186** | 0.58 | 0.54 | 0.61 |
+```bash
+1.eda.ipynb
+2_uplift.ipynb
+3_API.ipynb
+4_streamlit.ipynb
+```
 
----
+## Example workflow
 
-## 🔮 Future Improvements
+```python
+# Example idea: train churn model, compute SHAP values, and score a customer
+# Workflow is implemented in the notebooks rather than a standalone package.
+```
 
-- [ ] Streamlit dashboard with real-time predictions
-- [ ] Docker containerization + Railway deployment
-- [ ] Model drift detection with Evidently AI
-- [ ] Survival analysis — predict *when* customers will churn
-- [ ] A/B test simulator for retention offer strategies
+## Repository structure
 
----
+```text
+customer-churn-mlops/
+├── 1.eda.ipynb
+├── 2_uplift.ipynb
+├── 3_API.ipynb
+├── 4_streamlit.ipynb
+├── README.md
+├── customer_churn.gif
+├── WA_Fn-UseC_-Telco-Customer-Churn.csv
+└── .kilo/
+```
 
-## 👤 Author
+## Notes
 
-**Chirag Batra**  
-B.Tech Computer Science (Data Science) 
-[GitHub](https://github.com/YOUR_USERNAME) · [LinkedIn](https://linkedin.com/in/YOUR_PROFILE)
+- This project is focused on experimentation and demonstration.
+- Model artifacts such as pickled models are generated during notebook execution.
+- The project is a strong example of applied MLOps thinking: predictive modeling + explainability + operationalization + business impact.
 
----
+## License
 
-*Built as part of a data science portfolio project targeting production-grade ML engineering.*
+This project is intended for educational and portfolio use. Add an appropriate license if you plan to share it publicly.
